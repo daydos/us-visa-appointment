@@ -99,7 +99,7 @@ const parseArgs = require('minimist');
       //#region Init puppeteer
       const browser = await puppeteer.launch();
       // Comment above line and uncomment following line to see puppeteer in action
-      // const browser = await puppeter.launch({ headless: false });
+      // const browser = await puppeteer.launch({ headless: false });
       const page = await browser.newPage();
       const timeout = 5000;
       const smallTimeout = 100;
