@@ -238,6 +238,7 @@ const parseArgs = require('minimist');
           const element = await waitForSelectors([["aria/Consular Section Appointment","aria/[role=\"combobox\"]"],["#appointments_consulate_appointment_facility_id"]], targetPage, { timeout, visible: true });
           await scrollIntoViewIfNeeded(element, timeout);    
           await page.select("#appointments_consulate_appointment_facility_id", consularId);
+          await new Promise(resolve => setTimeout(resolve, 500));
       }
 
       // Click on date input
