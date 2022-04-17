@@ -93,13 +93,17 @@ const parseArgs = require('minimist');
       }
       throw new Error('Timed out');
     }
+
+    async function sleep(timeout) {
+      return await new Promise(resolve => setTimeout(resolve, timeout));
+    }
     //#endregion
 
     async function runLogic() {
       //#region Init puppeteer
       const browser = await puppeteer.launch();
       // Comment above line and uncomment following line to see puppeteer in action
-      // const browser = await puppeteer.launch({ headless: false });
+      //const browser = await puppeteer.launch({ headless: false });
       const page = await browser.newPage();
       const timeout = 5000;
       const smallTimeout = 100;
@@ -188,10 +192,10 @@ const parseArgs = require('minimist');
       // Click login button
       {
           const targetPage = page;
-          const promises = [];
-          promises.push(targetPage.waitForNavigation());
           const element = await waitForSelectors([["aria/Sign In[role=\"button\"]"],["#new_user > p:nth-child(9) > input"]], targetPage, { timeout, visible: true });
           await scrollIntoViewIfNeeded(element, timeout);
+          const promises = [];
+          promises.push(targetPage.waitForNavigation());
           await element.click({ offset: { x: 34, y: 11.34375} });
           await Promise.all(promises);
       }
@@ -199,10 +203,7 @@ const parseArgs = require('minimist');
       // We are logged in now. Check available dates from the API
       {
           const targetPage = page;
-          const promises = [];
-          promises.push(targetPage.waitForNavigation());
           const response = await targetPage.goto('https://ais.usvisa-info.com/en-ca/niv/schedule/' + appointmentId + '/appointment/days/' + consularId + '.json?appointments[expedite]=false');
-          await Promise.all(promises);
 
           const availableDates = JSON.parse(await response.text());
 
@@ -211,7 +212,7 @@ const parseArgs = require('minimist');
             await browser.close();
             return false;
           }
-
+          
           const firstDate = new Date(availableDates[0].date);
 
           if (firstDate > currentDate) {
@@ -228,8 +229,9 @@ const parseArgs = require('minimist');
           const targetPage = page;
           const promises = [];
           promises.push(targetPage.waitForNavigation());
-          await targetPage.goto('https://ais.usvisa-info.com/en-ca/niv/schedule/35973458/appointment');
+          await targetPage.goto('https://ais.usvisa-info.com/en-ca/niv/schedule/' + appointmentId + '/appointment');
           await Promise.all(promises);
+          await sleep(1000);
       }    
 
       // Select the specified consular from the dropdown
@@ -238,7 +240,7 @@ const parseArgs = require('minimist');
           const element = await waitForSelectors([["aria/Consular Section Appointment","aria/[role=\"combobox\"]"],["#appointments_consulate_appointment_facility_id"]], targetPage, { timeout, visible: true });
           await scrollIntoViewIfNeeded(element, timeout);    
           await page.select("#appointments_consulate_appointment_facility_id", consularId);
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await sleep(1000);
       }
 
       // Click on date input
@@ -247,6 +249,7 @@ const parseArgs = require('minimist');
           const element = await waitForSelectors([["aria/Date of Appointment *"],["#appointments_consulate_appointment_date"]], targetPage, { timeout, visible: true });
           await scrollIntoViewIfNeeded(element, timeout);
           await element.click({ offset: { x: 394.5, y: 17.53125} });
+          await sleep(1000);
       }
 
       // Keep clicking next button until we find the first available date and click to that date
@@ -257,6 +260,7 @@ const parseArgs = require('minimist');
               const element = await waitForSelectors([["aria/25[role=\"link\"]"],["#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group-last > table > tbody > tr > td.undefined > a"]], targetPage, { timeout:smallTimeout, visible: true });
               await scrollIntoViewIfNeeded(element, timeout);
               await page.click('#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group-last > table > tbody > tr > td.undefined > a');
+              await sleep(500);
               break;
             } catch (err) {
               {
@@ -274,12 +278,12 @@ const parseArgs = require('minimist');
           const targetPage = page;
           const element = await waitForSelectors([["#appointments_consulate_appointment_time"]], targetPage, { timeout, visible: true });
           await scrollIntoViewIfNeeded(element, timeout);
-          await new Promise(resolve => setTimeout(resolve, 500));
           await page.evaluate(() => {
             document.querySelector('#appointments_consulate_appointment_time option:nth-child(2)').selected = true;
             const event = new Event('change', {bubbles: true});
             document.querySelector('#appointments_consulate_appointment_time').dispatchEvent(event);
           })
+          await sleep(1000);
       }
 
       // Click on reschedule button
@@ -288,6 +292,7 @@ const parseArgs = require('minimist');
           const element = await waitForSelectors([["aria/Reschedule"],["#appointments_submit"]], targetPage, { timeout, visible: true });
           await scrollIntoViewIfNeeded(element, timeout);
           await element.click({ offset: { x: 78.109375, y: 20.0625} });
+          await sleep(1000);
       }
 
       // Click on submit button on the confirmation popup
@@ -304,13 +309,17 @@ const parseArgs = require('minimist');
     }
 
     while (true){
-      const result = await runLogic();
+      try{
+        const result = await runLogic();
 
-      if (result){
-        console.log("Successfully scheduled a new appointment");
-        break;
+        if (result){
+          console.log("Successfully scheduled a new appointment");
+          break;
+        }
+      } catch (err){
+        // Swallow the error and keep running in case we encountered an error.
       }
 
-      await new Promise(resolve => setTimeout(resolve, retryTimeout));
+      await sleep(retryTimeout);
     }
 })();
