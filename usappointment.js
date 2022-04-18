@@ -301,6 +301,7 @@ const parseArgs = require('minimist');
         const element = await waitForSelectors([["aria/Cancel"],["body > div.reveal-overlay > div > div > a.button.alert"]], targetPage, { timeout, visible: true });
         await scrollIntoViewIfNeeded(element, timeout);
         await page.click('body > div.reveal-overlay > div > div > a.button.alert');
+        await sleep(1000);
       }
 
       await browser.close();
