@@ -122,7 +122,7 @@ const parseArgs = require('minimist');
       {
           const targetPage = page;
           const promises = [];
-          promises.push(targetPage.waitForNavigation());
+          promises.push(targetPage.waitForNavigation().catch());
           await targetPage.goto('https://ais.usvisa-info.com/en-ca/niv/users/sign_in');
           await Promise.all(promises);
       }
@@ -195,7 +195,7 @@ const parseArgs = require('minimist');
           const element = await waitForSelectors([["aria/Sign In[role=\"button\"]"],["#new_user > p:nth-child(9) > input"]], targetPage, { timeout, visible: true });
           await scrollIntoViewIfNeeded(element, timeout);
           const promises = [];
-          promises.push(targetPage.waitForNavigation());
+          promises.push(targetPage.waitForNavigation().catch());
           await element.click({ offset: { x: 34, y: 11.34375} });
           await Promise.all(promises);
       }
@@ -228,7 +228,7 @@ const parseArgs = require('minimist');
       {
           const targetPage = page;
           const promises = [];
-          promises.push(targetPage.waitForNavigation());
+          promises.push(targetPage.waitForNavigation().catch());
           await targetPage.goto('https://ais.usvisa-info.com/en-ca/niv/schedule/' + appointmentId + '/appointment');
           await Promise.all(promises);
           await sleep(1000);
