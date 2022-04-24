@@ -257,9 +257,9 @@ const parseArgs = require('minimist');
           const targetPage = page;
           while (true) {
             try {
-              const element = await waitForSelectors([["aria/25[role=\"link\"]"],["#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group-last > table > tbody > tr > td.undefined > a"]], targetPage, { timeout:smallTimeout, visible: true });
+              const element = await waitForSelectors([["aria/25[role=\"link\"]"],["#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group > table > tbody > tr > td.undefined > a"]], targetPage, { timeout:smallTimeout, visible: true });
               await scrollIntoViewIfNeeded(element, timeout);
-              await page.click('#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group-last > table > tbody > tr > td.undefined > a');
+              await page.click('#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group > table > tbody > tr > td.undefined > a');
               await sleep(500);
               break;
             } catch (err) {
