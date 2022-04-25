@@ -107,7 +107,9 @@ const parseArgs = require('minimist');
       const page = await browser.newPage();
       const timeout = 5000;
       const smallTimeout = 100;
+      const navigationTimeout = 60000;
       page.setDefaultTimeout(timeout);
+      page.setDefaultNavigationTimeout(navigationTimeout);
       //#endregion
 
       //#region Logic
