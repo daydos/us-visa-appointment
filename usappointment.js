@@ -97,6 +97,11 @@ const parseArgs = require('minimist');
     async function sleep(timeout) {
       return await new Promise(resolve => setTimeout(resolve, timeout));
     }
+
+    async function log(msg) {
+      const currentDate = '[' + new Date().toLocaleString() + ']';
+      console.log(currentDate, msg);
+    }
     //#endregion
 
     async function runLogic() {
@@ -106,8 +111,8 @@ const parseArgs = require('minimist');
       //const browser = await puppeteer.launch({ headless: false });
       const page = await browser.newPage();
       const timeout = 5000;
-      const smallTimeout = 100;
       const navigationTimeout = 60000;
+      const smallTimeout = 100;
       page.setDefaultTimeout(timeout);
       page.setDefaultNavigationTimeout(navigationTimeout);
       //#endregion
@@ -210,7 +215,7 @@ const parseArgs = require('minimist');
           const availableDates = JSON.parse(await response.text());
 
           if (availableDates.length <= 0) {
-            console.log("There are no available dates for consulate with id " + consularId);
+            log("There are no available dates for consulate with id " + consularId);
             await browser.close();
             return false;
           }
@@ -218,12 +223,12 @@ const parseArgs = require('minimist');
           const firstDate = new Date(availableDates[0].date);
 
           if (firstDate > currentDate) {
-            console.log("There is not an earlier date available than " + currentDate.toISOString().slice(0,10));
+            log("There is not an earlier date available than " + currentDate.toISOString().slice(0,10));
             await browser.close();
             return false;
           }
 
-          console.log("Found an earlier date! " + firstDate.toISOString().slice(0,10));
+          log("Found an earlier date! " + firstDate.toISOString().slice(0,10));
       }    
 
       // Go to appointment page
@@ -316,7 +321,7 @@ const parseArgs = require('minimist');
         const result = await runLogic();
 
         if (result){
-          console.log("Successfully scheduled a new appointment");
+          log("Successfully scheduled a new appointment");
           break;
         }
       } catch (err){
