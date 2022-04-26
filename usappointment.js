@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer');
 const parseArgs = require('minimist');
+const axios = require('axios');
 
 (async () => {
     //#region Command line args
@@ -10,6 +11,7 @@ const parseArgs = require('minimist');
     const appointmentId = args.a;
     const retryTimeout = args.t * 1000;
     const consularId = JSON.stringify(args.c);
+    const userToken = args.n;
     //#endregion
 
     //#region Helper functions
@@ -101,6 +103,24 @@ const parseArgs = require('minimist');
     async function log(msg) {
       const currentDate = '[' + new Date().toLocaleString() + ']';
       console.log(currentDate, msg);
+    }
+
+    async function notify(msg) {
+      log(msg);
+
+      if (!userToken) {
+        return;
+      }
+
+      const pushOverAppToken = 'a5o8qtigtvu3yyfaeehtnzfkm88zc9';
+      const apiEndpoint = 'https://api.pushover.net/1/messages.json';
+      const data = {
+        token: pushOverAppToken,
+        user: userToken,
+        message: msg
+      };
+
+      await axios.post(apiEndpoint, data);
     }
     //#endregion
 
@@ -228,7 +248,7 @@ const parseArgs = require('minimist');
             return false;
           }
 
-          log("Found an earlier date! " + firstDate.toISOString().slice(0,10));
+          notify("Found an earlier date! " + firstDate.toISOString().slice(0,10));
       }    
 
       // Go to appointment page
@@ -321,7 +341,7 @@ const parseArgs = require('minimist');
         const result = await runLogic();
 
         if (result){
-          log("Successfully scheduled a new appointment");
+          notify("Successfully scheduled a new appointment");
           break;
         }
       } catch (err){
