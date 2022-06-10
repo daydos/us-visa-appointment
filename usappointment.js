@@ -12,6 +12,7 @@ const axios = require('axios');
     const retryTimeout = args.t * 1000;
     const consularId = JSON.stringify(args.c);
     const userToken = args.n;
+    const groupAppointment = args.g;
     //#endregion
 
     //#region Helper functions
@@ -259,7 +260,18 @@ const axios = require('axios');
           await targetPage.goto('https://ais.usvisa-info.com/en-ca/niv/schedule/' + appointmentId + '/appointment');
           await Promise.all(promises);
           await sleep(1000);
-      }    
+      }     
+
+      // Select multiple people if it is a group appointment
+      {
+          if(groupAppointment){
+            const targetPage = page;
+            const element = await waitForSelectors([["aria/Continue"],["#main > div.mainContent > form > div:nth-child(3) > div > input"]], targetPage, { timeout, visible: true });
+            await scrollIntoViewIfNeeded(element, timeout);
+            await element.click({ offset: { x: 70.515625, y: 25.25} });
+            await sleep(1000);
+          }
+      }
 
       // Select the specified consular from the dropdown
       {
