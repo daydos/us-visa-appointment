@@ -4,17 +4,18 @@ const axios = require('axios');
 
 (async () => {
     //#region Command line args
-    const args = parseArgs(process.argv.slice(2))
+    const args = parseArgs(process.argv.slice(2), {string: ['u', 'p', 'c', 'a', 'n', 'd', 'r'], boolean: ['g']})
     const currentDate = new Date(args.d);
     const usernameInput = args.u;
     const passwordInput = args.p;
     const appointmentId = args.a;
     const retryTimeout = args.t * 1000;
-    const consularId = JSON.stringify(args.c);
+    const consularId = args.c;
     const userToken = args.n;
     const groupAppointment = args.g;
+    const region = args.r;
     //#endregion
-
+	
     //#region Helper functions
     async function waitForSelectors(selectors, frame, options) {
       for (const selector of selectors) {
@@ -139,7 +140,7 @@ const axios = require('axios');
       //#endregion
 
       //#region Logic
-
+	  
       // Set the viewport to avoid elements changing places 
       {
           const targetPage = page;
@@ -149,10 +150,7 @@ const axios = require('axios');
       // Go to login page
       {
           const targetPage = page;
-          const promises = [];
-          promises.push(targetPage.waitForNavigation().catch());
-          await targetPage.goto('https://ais.usvisa-info.com/en-ca/niv/users/sign_in');
-          await Promise.all(promises);
+          await targetPage.goto('https://ais.usvisa-info.com/en-' + region + '/niv/users/sign_in', { waitUntil: 'domcontentloaded' });
       }
 
       // Click on username input
@@ -180,7 +178,7 @@ const axios = require('axios');
             }, usernameInput);
           }
       }
-
+	  
       // Hit tab to go to the password input
       {
           const targetPage = page;
@@ -190,12 +188,12 @@ const axios = require('axios');
           const targetPage = page;
           await targetPage.keyboard.up("Tab");
       }
-
+	  
       // Type password
       {
           const targetPage = page;
           const element = await waitForSelectors([["aria/Password"],["#user_password"]], targetPage, { timeout, visible: true });
-          await scrollIntoViewIfNeeded(element, timeout);
+		  await scrollIntoViewIfNeeded(element, timeout);
           const type = await element.evaluate(el => el.type);
           if (["textarea","select-one","text","url","tel","search","password","number","email"].includes(type)) {
             await element.type(passwordInput);
@@ -208,7 +206,7 @@ const axios = require('axios');
             }, passwordInput);
           }
       }
-
+	  
       // Tick the checkbox for agreement
       {
           const targetPage = page;
@@ -222,16 +220,14 @@ const axios = require('axios');
           const targetPage = page;
           const element = await waitForSelectors([["aria/Sign In[role=\"button\"]"],["#new_user > p:nth-child(9) > input"]], targetPage, { timeout, visible: true });
           await scrollIntoViewIfNeeded(element, timeout);
-          const promises = [];
-          promises.push(targetPage.waitForNavigation().catch());
           await element.click({ offset: { x: 34, y: 11.34375} });
-          await Promise.all(promises);
+          await targetPage.waitForNavigation();
       }
 
       // We are logged in now. Check available dates from the API
       {
           const targetPage = page;
-          const response = await targetPage.goto('https://ais.usvisa-info.com/en-ca/niv/schedule/' + appointmentId + '/appointment/days/' + consularId + '.json?appointments[expedite]=false');
+          const response = await targetPage.goto('https://ais.usvisa-info.com/en-' + region + '/niv/schedule/' + appointmentId + '/appointment/days/' + consularId + '.json?appointments[expedite]=false');
 
           const availableDates = JSON.parse(await response.text());
 
@@ -255,10 +251,7 @@ const axios = require('axios');
       // Go to appointment page
       {
           const targetPage = page;
-          const promises = [];
-          promises.push(targetPage.waitForNavigation().catch());
-          await targetPage.goto('https://ais.usvisa-info.com/en-ca/niv/schedule/' + appointmentId + '/appointment');
-          await Promise.all(promises);
+          await targetPage.goto('https://ais.usvisa-info.com/en-' + region + '/niv/schedule/' + appointmentId + '/appointment', { waitUntil: 'domcontentloaded' });
           await sleep(1000);
       }     
 
