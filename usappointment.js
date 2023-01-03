@@ -210,7 +210,7 @@ const axios = require('axios');
       // Tick the checkbox for agreement
       {
           const targetPage = page;
-          const element = await waitForSelectors([["#new_user > div.radio-checkbox-group.margin-top-30 > label > div"]], targetPage, { timeout, visible: true });
+          const element = await waitForSelectors([["#sign_in_form > div.radio-checkbox-group.margin-top-30 > label > div"]], targetPage, { timeout, visible: true });
           await scrollIntoViewIfNeeded(element, timeout);
           await element.click({ offset: { x: 9, y: 16.34375} });
       }
