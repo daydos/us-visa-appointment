@@ -241,7 +241,7 @@ const axios = require('axios');
           const firstDate = new Date(availableDates[0].date);
 
           if (firstDate > currentDate) {
-            log("There is not an earlier date available than " + currentDate.toISOString().slice(0,10));
+            log("There is not an earlier date available than " + currentDate.toISOString().slice(0,10) + ", first available date is " + firstDate.toISOString().slice(0, 10));
             await browser.close();
             return false;
           }
@@ -304,6 +304,20 @@ const axios = require('axios');
               }
             }
           }
+      }
+
+      // Read the date selected from date picker and confirm that it is still a valid date i.e. before the provided current date.
+      {
+        const targetPage = page;
+        const element = await waitForSelectors([["#appointments_consulate_appointment_date"]], targetPage, { timeout, visible: true });
+        const selectedDate = await targetPage.evaluate(el => el.value, element);
+        if (new Date(selectedDate) > currentDate) {
+          log("Selected date " + selectedDate + " is after current date. Aborting!!!");
+          await browser.close();
+          return false;
+        } else {
+          log("Continue booking with " + selectedDate);
+        }
       }
 
       // Select the first available Time from the time dropdown
