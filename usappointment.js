@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer');
 const parseArgs = require('minimist');
 const axios = require('axios');
 
+const MAX_DATE_PICKER_LOOKUP = 12 * 4;
 (async () => {
     //#region Command line args
     const args = parseArgs(process.argv.slice(2), {string: ['u', 'p', 'c', 'a', 'n', 'd', 'r'], boolean: ['g']})
@@ -287,7 +288,8 @@ const axios = require('axios');
       // Keep clicking next button until we find the first available date and click to that date
       {
           const targetPage = page;
-          while (true) {
+          var count = 0;
+          while (count++ < MAX_DATE_PICKER_LOOKUP) {
             try {
               const element = await waitForSelectors([["aria/25[role=\"link\"]"],["#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group > table > tbody > tr > td.undefined > a"]], targetPage, { timeout:smallTimeout, visible: true });
               await scrollIntoViewIfNeeded(element, timeout);
@@ -302,6 +304,11 @@ const axios = require('axios');
                   await element.click({ offset: { x: 4, y: 9.03125} });
               }
             }
+          }
+          if (count >= MAX_DATE_PICKER_LOOKUP) {
+            log("Max date picker lookup reached. Aborting!!!");
+            await browser.close();
+            return false;
           }
       }
 
