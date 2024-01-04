@@ -126,11 +126,7 @@ const axios = require('axios');
     }
     //#endregion
 
-    async function runLogic() {
-      //#region Init puppeteer
-      const browser = await puppeteer.launch();
-      // Comment above line and uncomment following line to see puppeteer in action
-      //const browser = await puppeteer.launch({ headless: false });
+    async function runLogic(browser) {
       const page = await browser.newPage();
       const timeout = 5000;
       const navigationTimeout = 60000;
@@ -341,9 +337,20 @@ const axios = require('axios');
       //#endregion
     }
 
+    async function close(browser) {
+      const pages = await browser.pages();
+      for (let i = 0; i < pages.length; i++) {
+        await pages[i].close();
+      }
+      await browser.close();
+    }
+
     while (true){
+      // Change value of headless to "false" to see puppeteer in action
+      const browser = await puppeteer.launch({ headless: true });
+
       try{
-        const result = await runLogic();
+        const result = await runLogic(browser);
 
         if (result){
           notify("Successfully scheduled a new appointment");
@@ -351,6 +358,8 @@ const axios = require('axios');
         }
       } catch (err){
         // Swallow the error and keep running in case we encountered an error.
+      } finally {
+        close(browser)
       }
 
       await sleep(retryTimeout);
