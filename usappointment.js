@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer');
 const parseArgs = require('minimist');
 const axios = require('axios');
 
+const MAX_DATE_PICKER_LOOKUP = 12 * 4;
 (async () => {
     //#region Command line args
     const args = parseArgs(process.argv.slice(2), {string: ['u', 'p', 'c', 'a', 'n', 'd', 'r'], boolean: ['g']})
@@ -126,21 +127,15 @@ const axios = require('axios');
     }
     //#endregion
 
-    async function runLogic() {
-      //#region Init puppeteer
-      const browser = await puppeteer.launch();
-      // Comment above line and uncomment following line to see puppeteer in action
-      //const browser = await puppeteer.launch({ headless: false });
+    async function runLogic(browser) {
       const page = await browser.newPage();
       const timeout = 5000;
       const navigationTimeout = 60000;
       const smallTimeout = 100;
       page.setDefaultTimeout(timeout);
       page.setDefaultNavigationTimeout(navigationTimeout);
-      //#endregion
 
       //#region Logic
-	  
       // Set the viewport to avoid elements changing places 
       {
           const targetPage = page;
@@ -227,6 +222,7 @@ const axios = require('axios');
       // We are logged in now. Check available dates from the API
       {
           const targetPage = page;
+	  await targetPage.setExtraHTTPHeaders({'Accept': 'application/json, text/javascript, */*; q=0.01', 'X-Requested-With': 'XMLHttpRequest'});
           const response = await targetPage.goto('https://ais.usvisa-info.com/en-' + region + '/niv/schedule/' + appointmentId + '/appointment/days/' + consularId + '.json?appointments[expedite]=false');
 
           const availableDates = JSON.parse(await response.text());
@@ -240,7 +236,7 @@ const axios = require('axios');
           const firstDate = new Date(availableDates[0].date);
 
           if (firstDate > currentDate) {
-            log("There is not an earlier date available than " + currentDate.toISOString().slice(0,10));
+            log("There is not an earlier date available than " + currentDate.toISOString().slice(0,10) + ", first available date is " + firstDate.toISOString().slice(0, 10));
             await browser.close();
             return false;
           }
@@ -287,7 +283,8 @@ const axios = require('axios');
       // Keep clicking next button until we find the first available date and click to that date
       {
           const targetPage = page;
-          while (true) {
+          var count = 0;
+          while (count++ < MAX_DATE_PICKER_LOOKUP) {
             try {
               const element = await waitForSelectors([["aria/25[role=\"link\"]"],["#ui-datepicker-div > div.ui-datepicker-group.ui-datepicker-group > table > tbody > tr > td.undefined > a"]], targetPage, { timeout:smallTimeout, visible: true });
               await scrollIntoViewIfNeeded(element, timeout);
@@ -303,6 +300,25 @@ const axios = require('axios');
               }
             }
           }
+          if (count >= MAX_DATE_PICKER_LOOKUP) {
+            log("Max date picker lookup reached. Aborting!!!");
+            await browser.close();
+            return false;
+          }
+      }
+
+      // Read the date selected from date picker and confirm that it is still a valid date i.e. before the provided current date.
+      {
+        const targetPage = page;
+        const element = await waitForSelectors([["#appointments_consulate_appointment_date"]], targetPage, { timeout, visible: true });
+        const selectedDate = await targetPage.evaluate(el => el.value, element);
+        if (new Date(selectedDate) > currentDate) {
+          log("Selected date " + selectedDate + " is after current date. Aborting!!!");
+          await browser.close();
+          return false;
+        } else {
+          log("Continue booking with " + selectedDate);
+        }
       }
 
       // Select the first available Time from the time dropdown
@@ -341,9 +357,20 @@ const axios = require('axios');
       //#endregion
     }
 
+    async function close(browser) {
+      const pages = await browser.pages();
+      for (let i = 0; i < pages.length; i++) {
+        await pages[i].close();
+      }
+      await browser.close();
+    }
+
     while (true){
+      // Change value of headless to "false" to see puppeteer in action
+      const browser = await puppeteer.launch({ headless: true });
+
       try{
-        const result = await runLogic();
+        const result = await runLogic(browser);
 
         if (result){
           notify("Successfully scheduled a new appointment");
@@ -351,6 +378,8 @@ const axios = require('axios');
         }
       } catch (err){
         // Swallow the error and keep running in case we encountered an error.
+      } finally {
+        close(browser)
       }
 
       await sleep(retryTimeout);
